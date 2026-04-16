@@ -6,7 +6,7 @@ Etrade-tietojen unperseraattori veroilmoitusta varten.
 
 Veroilmoitukseen tarvittavien tietojen kaivaminen Etradesta on sen verran työlästä, että olen joka vuosi automatisoinut prosessia vähän enemmän ja nyt ajattelin jakaa skriptin muidenkin käyttöön. Tietäjät tietää, mihin tätä käytetään.
 
-Scripti luo html-raportin, missä on eriteltynä kaikki myyntitapahtumat euromääräisinä summina ja laskee yhteen luovutushinnat-, voitot ja tappiot. Raportin voi liittää veroilmoitukseen ja toivoa, että verottaja on tyytyväinen (käytännön kokemusta ei vielä ole).
+Scripti luo html-raportin, missä on eriteltynä kaikki myyntitapahtumat euromääräisinä summina, ja laskee yhteen luovutushinnat-, voitot ja tappiot. Raportin voi liittää veroilmoitukseen ja toivoa, että verottaja on tyytyväinen (käytännön kokemusta ei vielä ole).
 
 ## Asennus
 
@@ -42,7 +42,7 @@ Suorita ohjelma seuraavalla komennolla (esimerkki):
 python etrade-parser.py --input "G&L_Expanded_2025.xlsx" --valuuttakurssit "valuuttakurssit_short_fi.xlsx"
 ```
 
-Jos myyntien joukossa on ESPP-osakkeita, tarvitset lisäksi ESPP:n ostoihin käytetyn valuuttakurssin.
+Jos myytyjen osakkeiden joukossa on ESPP-osakkeita, tarvitset lisäksi ESPP:n ostoihin käytetyn valuuttakurssin.
 Tämä valuuttakurssi löytyy `ESPP purchase confirmation` -dokumenteista.
 
 Dokumentit löytyy Etradesta:

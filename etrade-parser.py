@@ -131,6 +131,102 @@ class sell_event_details:
     def gain_loss_eur(self):
         return self.total_proceeds_eur() - self.vest_date_fmv_eur()
 
+def create_html_report(sell_events: list[sell_event_details]):
+
+    # Use comma as the decimal separator in the output, because this is the format used in the Finnish tax return.
+    import locale
+    locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
+
+    # Create an HTML report for the sell events.
+    # Create a table
+    html = []
+    html.append("<html><body>")
+    html.append("<h1>E*TRADE-osakkeiden luovutukset vuonna 2025</h1>")
+    html.append("<p>Vuonna 2025 luovutetut osakkeet E*TRADE-palvelussa.</p>")
+    html.append("<table border='1' cellspacing='0' cellpadding='2'>")
+    html.append("<tr>")
+    html.append("<th>#</th>") #index
+    html.append("<th>Arvopaperin<br>nimi</th>")
+    html.append("<th>Arvopaperin<br>laji*</th>")
+    html.append("<th>Lukumäärä</th>")
+    html.append("<th>Hankintapäivä</th>")
+    html.append("<th>Hankintahinta [EUR]</th>")
+    html.append("<th>Luovutuspäivä</th>")
+    html.append("<th>Luovutushinta [EUR]</th>")
+    html.append("<th>Voitto/tappio [EUR]</th>")
+    html.append("</tr>")
+
+    total_gain_loss_eur = 0
+    total_gain_eur = 0
+    total_loss_eur = 0
+    total_proceeds_eur = 0
+    total_qty = 0
+    for idx, sell_event in enumerate(sell_events, 1):
+        html.append("<tr>")
+        html.append("<td>%d</td>" % idx) # index, starting from 1
+        html.append("<td>%s</td>" % sell_event.symbol) # Arvopaperin nimi
+        html.append("<td align='center'>51" ) # Arvopaperin laji
+        html.append("<td align='right'>%d</td>" % sell_event.qty) # Lukumäärä
+        html.append("<td align='right'>%s</td>" % convert_date_to_finnish_format(sell_event.date_acquired)) # Hankintapäivä
+        html.append(locale.format_string("<td align='right'>%.2f</td>", sell_event.vest_date_fmv_eur())) # Hankintahinta [EUR]
+        html.append("<td align='right'>%s</td>" % convert_date_to_finnish_format(sell_event.date_sold)) # Luovutuspäivä
+        html.append(locale.format_string("<td align='right'>%.2f</td>", sell_event.total_proceeds_eur())) # Luovutushinta [EUR]
+        html.append(locale.format_string("<td align='right'>%.2f</td>", sell_event.gain_loss_eur())) # Voitto/tappio [EUR]
+        html.append("</tr>")
+
+        total_proceeds_eur += sell_event.total_proceeds_eur()
+        total_gain_loss_eur += sell_event.gain_loss_eur()
+        if sell_event.gain_loss_eur() > 0:
+            total_gain_eur += sell_event.gain_loss_eur()
+        else:
+            total_loss_eur += sell_event.gain_loss_eur()
+        total_qty += sell_event.qty
+
+    html.append("</table>")
+    html.append("<br>*Arvopaperin laji 51 = Perusosake (ulkomainen)</td>")
+
+    html.append("<br>")
+    html.append("<h2>Veroilmoituksen kannalta oleelliset tiedot:</h2>")
+    html.append("<table border='0' cellspacing='0' cellpadding='2'>")
+    html.append("<td align='right'><b>Luovutushinnat yhteensä:</b></td>")
+    html.append(locale.format_string("<td align='right'>%.2f €</td>", total_proceeds_eur))
+    html.append("</tr>")
+    html.append("<tr>")
+    html.append("<td align='right'><b>Luovutusvoitot yhteensä:</b></td>")
+    html.append(locale.format_string("<td align='right'>%.2f €</td>", total_gain_eur))
+    html.append("</tr>")
+    html.append("<tr>")
+    html.append("<td align='right'><b>Luovutustappiot yhteensä:</b></td>")
+    html.append(locale.format_string("<td align='right'>%.2f €</td>", abs(total_loss_eur)))
+    html.append("</tr>")
+    html.append("</table>")
+
+    html.append("<br>")
+    html.append("<h2>Muut tiedot:</h2>")
+    html.append("<table border='0' cellspacing='0' cellpadding='2'>")
+    html.append("<tr>")
+    html.append("<td align='right'><b>Osakkeet yhteensä:</b></td>")
+    html.append(locale.format_string("<td align='right'>%d</td>", total_qty))
+    html.append("</tr>")
+    html.append("<tr>")
+    html.append("<td align='right'><b>Voitto/tappio yhteensä:</b></td>")
+    html.append(locale.format_string("<td align='right'>%.2f €</td>", total_gain_loss_eur))
+    html.append("</tr>")
+    html.append("</table>")
+    html.append("</body></html>")
+
+    with open("etrade_luovutukset_2025.html", "w", encoding="utf-8") as f:
+        f.write("\n".join(html))
+    print("All sell events details saved to etrade_luovutukset_2025.html")
+
+
+def convert_date_to_finnish_format(date: str) -> str:
+    # Convert the date to the format in the valuuttakurssit file
+    # 02/29/2024 -> 29.2.2024
+    date_split = date.split("/")
+    finnish_formatted_date = f"{int(date_split[1])}.{int(date_split[0])}.{date_split[2]}"
+    return finnish_formatted_date
+
 def main():
     # check if pandas and openpyxl are installed
     try:
@@ -268,103 +364,6 @@ def main():
         sell_events.append(sell_event)
 
     create_html_report(sell_events)
-    
-
-def create_html_report(sell_events: list[sell_event_details]):
-
-    # Use comma as the decimal separator in the output, because this is the format used in the Finnish tax return.
-    import locale
-    locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
-
-    # Create an HTML report for the sell events.
-    # Create a table
-    html = []
-    html.append("<html><body>")
-    html.append("<h1>E*TRADE-osakkeiden luovutukset vuonna 2025</h1>")
-    html.append("<p>Vuonna 2025 luovutetut osakkeet E*TRADE-palvelussa.</p>")
-    html.append("<table border='1' cellspacing='0' cellpadding='2'>")
-    html.append("<tr>")
-    html.append("<th>#</th>") #index
-    html.append("<th>Arvopaperin<br>nimi</th>")
-    html.append("<th>Arvopaperin<br>laji*</th>")
-    html.append("<th>Lukumäärä</th>")
-    html.append("<th>Hankintapäivä</th>")
-    html.append("<th>Hankintahinta [EUR]</th>")
-    html.append("<th>Luovutuspäivä</th>")
-    html.append("<th>Luovutushinta [EUR]</th>")
-    html.append("<th>Voitto/tappio [EUR]</th>")
-    html.append("</tr>")
-
-    total_gain_loss_eur = 0
-    total_gain_eur = 0
-    total_loss_eur = 0
-    total_proceeds_eur = 0
-    total_qty = 0
-    for idx, sell_event in enumerate(sell_events, 1):
-        html.append("<tr>")
-        html.append("<td>%d</td>" % idx) # index, starting from 1
-        html.append("<td>%s</td>" % sell_event.symbol) # Arvopaperin nimi
-        html.append("<td align='center'>51" ) # Arvopaperin laji
-        html.append("<td align='right'>%d</td>" % sell_event.qty) # Lukumäärä
-        html.append("<td align='right'>%s</td>" % convert_date_to_finnish_format(sell_event.date_acquired)) # Hankintapäivä
-        html.append(locale.format_string("<td align='right'>%.2f</td>", sell_event.vest_date_fmv_eur())) # Hankintahinta [EUR]
-        html.append("<td align='right'>%s</td>" % convert_date_to_finnish_format(sell_event.date_sold)) # Luovutuspäivä
-        html.append(locale.format_string("<td align='right'>%.2f</td>", sell_event.total_proceeds_eur())) # Luovutushinta [EUR]
-        html.append(locale.format_string("<td align='right'>%.2f</td>", sell_event.gain_loss_eur())) # Voitto/tappio [EUR]
-        html.append("</tr>")
-
-        total_proceeds_eur += sell_event.total_proceeds_eur()
-        total_gain_loss_eur += sell_event.gain_loss_eur()
-        if sell_event.gain_loss_eur() > 0:
-            total_gain_eur += sell_event.gain_loss_eur()
-        else:
-            total_loss_eur += sell_event.gain_loss_eur()
-        total_qty += sell_event.qty
-
-    html.append("</table>")
-    html.append("<br>*Arvopaperin laji 51 = Perusosake (ulkomainen)</td>")
-
-    html.append("<br>")
-    html.append("<h2>Veroilmoituksen kannalta oleelliset tiedot:</h2>")
-    html.append("<table border='0' cellspacing='0' cellpadding='2'>")
-    html.append("<td align='right'><b>Luovutushinnat yhteensä:</b></td>")
-    html.append(locale.format_string("<td align='right'>%.2f €</td>", total_proceeds_eur))
-    html.append("</tr>")
-    html.append("<tr>")
-    html.append("<td align='right'><b>Luovutusvoitot yhteensä:</b></td>")
-    html.append(locale.format_string("<td align='right'>%.2f €</td>", total_gain_eur))
-    html.append("</tr>")
-    html.append("<tr>")
-    html.append("<td align='right'><b>Luovutustappiot yhteensä:</b></td>")
-    html.append(locale.format_string("<td align='right'>%.2f €</td>", abs(total_loss_eur)))
-    html.append("</tr>")
-    html.append("</table>")
-
-    html.append("<br>")
-    html.append("<h2>Muut tiedot:</h2>")
-    html.append("<table border='0' cellspacing='0' cellpadding='2'>")
-    html.append("<tr>")
-    html.append("<td align='right'><b>Osakkeet yhteensä:</b></td>")
-    html.append(locale.format_string("<td align='right'>%d</td>", total_qty))
-    html.append("</tr>")
-    html.append("<tr>")
-    html.append("<td align='right'><b>Voitto/tappio yhteensä:</b></td>")
-    html.append(locale.format_string("<td align='right'>%.2f €</td>", total_gain_loss_eur))
-    html.append("</tr>")
-    html.append("</table>")
-    html.append("</body></html>")
-
-    with open("etrade_luovutukset_2025.html", "w", encoding="utf-8") as f:
-        f.write("\n".join(html))
-    print("All sell events details saved to etrade_luovutukset_2025.html")
-
-
-def convert_date_to_finnish_format(date: str) -> str:
-    # Convert the date to the format in the valuuttakurssit file
-    # 02/29/2024 -> 29.2.2024
-    date_split = date.split("/")
-    finnish_formatted_date = f"{int(date_split[1])}.{int(date_split[0])}.{date_split[2]}"
-    return finnish_formatted_date
 
 if __name__ == "__main__":
     main()
