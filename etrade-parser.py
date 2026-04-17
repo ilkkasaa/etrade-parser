@@ -256,7 +256,7 @@ def main():
     plan_type_a = df["Plan Type"] # RS(U) or ESPP
     # Check if the ESPP exchange rate is in the file. If not, add it.
     if "ESPP Exchange Rate" not in df.columns:
-        df["ESPP Exchange Rate"] = pd.NaT
+        df["ESPP Exchange Rate"] = None
     espp_exchange_rate_a = df["ESPP Exchange Rate"] # This is added by this script to store the exchange rates used when an ESPP was purchased.
 
     # Verify all the columns are the same length
@@ -276,14 +276,14 @@ def main():
     # Look for ESPP entries. The exchange rate for ESPP purchase should be used from the "ESPP purchase confirmation" document.
     espp_dates = []
     for i in range(len(plan_type_a)):
-        if plan_type_a[i] == "ESPP" and espp_exchange_rate_a[i] is pd.NaT:
+        if plan_type_a[i] == "ESPP" and pd.isna(espp_exchange_rate_a[i]):
             espp_dates.append((date_acquired_a[i], i))
 
     if len(espp_dates) > 0:
         print("ESPP entries found. The EUR->USD exchange rate for ESPP purchase should be used from the \"ESPP purchase confirmation\" document.")
         print("Download the document from etrade and find the exchange rate for the ESPP purchase date.")
         print("At work -> My Account -> Stock Plan Confirmation. Select the wanted year and click 'Apply'.")
-        print("Find the ESPP sell orders. Expand the order and click 'View Confirmation of Purchase' under 'Purchase / Grant Details'.")
+        print("Find the ESPP sell orders. Expand the order by clicking \"download\" under the Confirmation column.")
         print("This should give you a PDF. Look for the 'Average Exchange Rate' under 'Purchase Details' and 'Contributions'.")
         print("This is the exchange rate used by etrade to exchange your EUR to USD before purchasing the ESPP.")
 
